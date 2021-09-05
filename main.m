@@ -42,12 +42,12 @@ ylabel('x');
 
 chk_pt = [0.25 2;1.5 2;1.5 1.25;3.5 2;3.5 1.25;0.25 3;1.5 3;1.5 3.75;3.5 3;3.5 3.75];
 
-start1 = chk_pt(1,:); %Choose which checkpoint robot 1 starts from
-start2 = chk_pt(6,:); %Choose which checkpoint robot 2 starts from
+start1 = chk_pt(1,:);
+start2 = chk_pt(6,:);
 
 %Define checkpoints where the robot has to pass. The final row is the goal.
-path1 = Astar(map1,start1(1),start1(2),10);% the last argument, '10', is the checkpoint number. see the chk_pt matrix
-path2 = Astar(map1,start2(1),start2(2),5);%;
+path1 = Astar(map1,start1(1),start1(2),8);%[0.25 2;1.5 2;1.5 3;1.5 3.75];
+path2 = Astar(map1,start2(1),start2(2),5);%;[0.25 3;1.5 3;1.5 2;1.5 1.25];
 
 %Define initial robot state
 robotState1.x = path1(1,1); 
@@ -84,17 +84,12 @@ while (i<=size(path1,1) || j<=size(path2,1)) && (~EndFlag1 || ~EndFlag2)
     % Move Robot 1
     if ~EndFlag1
     %First rotate the robot1 towards goal
-    while robotState1.heading ~= atan2(path1(i,2)-robotState1.y,path1(i,1)-robotState1.x)
-        omega = sign(atan2(path1(i,2)-robotState1.y,robotState1.x-path1(i,1)) - robotState1.heading ) * deg2rad(60);
+    if robotState1.heading ~= atan2(path1(i,2)-robotState1.y,(path1(i,1)-robotState1.x))
+        omega = sign(atan2(path1(i,2)-robotState1.y,(path1(i,1) - robotState1.x)) - robotState1.heading ) * deg2rad(60);
         robotState1 = updateRobotState(robotState1, 0, omega, parameters.timestep);
     % After the robot is oriented towards the next checkpoint, give it a translational velocity
-    end
-    if (robotState1.x ~= path1(i,1) || robotState1.y ~= path1(i,2))
-        if(robotState1.x > path1(i,1))
-            v = -1;
-        else
-            v = 1;
-        end
+    elseif (robotState1.x ~= path1(i,1) || robotState1.y ~= path1(i,2))
+        v = 1;
         robotState1 = updateRobotState(robotState1, v, 0, parameters.timestep);
     end
     
@@ -103,30 +98,21 @@ while (i<=size(path1,1) || j<=size(path2,1)) && (~EndFlag1 || ~EndFlag2)
     % Move Robot 2
     if ~EndFlag2
     %First rotate the robot2 towards goal
-    while robotState2.heading ~= atan2(path2(j,2)-robotState2.y,path2(j,1)-robotState2.x)
-        omega = sign(atan2(path2(j,2)-robotState2.y,robotState2.x-path2(j,1)) - robotState2.heading ) * deg2rad(90);
-        robotState2 = updateRobotState(robotState2, 0, omega, parameters.timestep);
-    end    
+    if robotState2.heading ~= atan2(path2(j,2)-robotState2.y,(path2(j,1)-robotState2.x))
+        omega = sign(atan2(path2(j,2)-robotState2.y,(path2(j,1)-robotState2.x)) - robotState2.heading ) * deg2rad(90);
+        robotState2 = updateRobotState(robotState2, 0, omega, parameters.timestep);    
     % After the robot is oriented towards the next checkpoint, give it a translational velocity
-    if norm([robotState2.x-path2(j,1) robotState2.y-path2(j,2)]) == eps
+    elseif norm([robotState2.x-path2(j,1) robotState2.y-path2(j,2)]) == eps
             m = find((path1(:,1) == path2(j,1) & path1(:,2) == path2(j,2))==1);
             if active(m)==1
                 v = 0;
                 robotState2 = updateRobotState(robotState2, v, 0, parameters.timestep);
             elseif (robotState2.x ~= path2(j,1) || robotState2.y ~= path2(j,2))
-                if(robotState2.x > path2(j,1))
-                    v = -1;
-                else
-                    v = 1;
-                end
+                v = 1;
                 robotState2 = updateRobotState(robotState2, v, 0, parameters.timestep);
             end
     elseif (robotState2.x ~= path2(j,1) || robotState2.y ~= path2(j,2))
-         if(robotState2.x > path2(j,1))
-            v = -1;
-         else
-            v = 1;
-         end
+         v = 1;
          robotState2 = updateRobotState(robotState2, v, 0, parameters.timestep);
     end
     end
@@ -138,9 +124,13 @@ while (i<=size(path1,1) || j<=size(path2,1)) && (~EndFlag1 || ~EndFlag2)
  
     %Check if checkpoint has been reached.
     if (robotState1.x == path1(i,1) && robotState1.y == path1(i,2) && i<size(path1,1))
-        active(i) = 0;
         i=i+1;
         disp('Checkpoint reached for Robot 1');
+        inc = true;
+    end
+    if robotState1.heading == atan2(path1(i,2)-robotState1.y,path1(i,1)-robotState1.x) && inc == true
+        active(i-1) = 0;
+        inc = false;
     end
     if (robotState2.x == path2(j,1) && robotState2.y == path2(j,2) && j<size(path2,1))
         j = j + 1;
@@ -164,7 +154,6 @@ while (i<=size(path1,1) || j<=size(path2,1)) && (~EndFlag1 || ~EndFlag2)
         disp('One of the Robots went outside the allowed area.');
     end
     drawnow;
-    %w = waitforbuttonpress;
     %pause(parameters.timestep);
 end
 
