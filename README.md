@@ -2,6 +2,8 @@
 
 This project implements an approach to automate order delivery to tables within a restaurant environment. The paths of two unicycle robots inside the restaurant are calculated by solving a path planning problem. The restaurant is considered a static environment and collision avoidance is done by determining the collision free path that satisfies the criteria for the shortest distance. The A*-algorithm has been implemented for path planning. Low level controllers control the robots by implementing motion primitives. The robots  navigate the environment using priority planning based on active paths.
 
+![Figure 1-1](/demo.png "Figure 1-1")
+
 The project was developed in collaboration with Saket Sarawgi and Arjan Vonk at TU Delft, Netherlands. 
 
 ## Prerequisites
